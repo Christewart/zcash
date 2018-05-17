@@ -14,6 +14,11 @@
 #include "script/script.h"
 #include "uint256.h"
 
+#include <iostream> 
+#include "core_io.h"
+#include "util.h"
+#include "utilstrencodings.h"
+#include "streams.h"
 using namespace std;
 
 typedef vector<unsigned char> valtype;
@@ -102,7 +107,7 @@ bool static IsValidSignatureEncoding(const std::vector<unsigned char> &sig) {
     //   excluding the sighash byte.
     // * R-length: 1-byte length descriptor of the R value that follows.
     // * R: arbitrary-length big-endian encoded R value. It must use the shortest
-    //   possible encoding for a positive integer (which means no null bytes at
+    //   possible encoding for a positive integers (which means no null bytes at
     //   the start, except a single one when the next byte has its highest bit set).
     // * S-length: 1-byte length descriptor of the S value that follows.
     // * S: arbitrary-length big-endian encoded S value. The same rules apply.
@@ -1166,23 +1171,33 @@ uint256 SignatureHash(
         memcpy(personalization+12, &leConsensusBranchId, 4);
 
         CBLAKE2bWriter ss(SER_GETHASH, 0, personalization);
+	CDataStream stream(SER_NETWORK, PROTOCOL_VERSION);
         // Header
         ss << txTo.GetHeader();
+        stream << txTo.GetHeader();
         // Version group ID
         ss << txTo.nVersionGroupId;
+        stream << txTo.nVersionGroupId;
         // Input prevouts/nSequence (none/all, depending on flags)
         ss << hashPrevouts;
         ss << hashSequence;
+        stream << hashPrevouts;
+        stream << hashSequence;
         // Outputs (none/one/all, depending on flags)
         ss << hashOutputs;
+        stream << hashOutputs;
         // JoinSplits
         ss << hashJoinSplits;
+        stream << hashJoinSplits;
         // Locktime
         ss << txTo.nLockTime;
+        stream << txTo.nLockTime;
         // Expiry height
         ss << txTo.nExpiryHeight;
+        stream << txTo.nExpiryHeight;
         // Sighash type
         ss << nHashType;
+        stream << nHashType;
 
         // If this hash is for a transparent input signature
         // (i.e. not for txTo.joinSplitSig):
@@ -1194,8 +1209,13 @@ uint256 SignatureHash(
             ss << scriptCode;
             ss << amount;
             ss << txTo.vin[nIn].nSequence;
+            
+	    stream << txTo.vin[nIn].prevout;
+            stream << scriptCode;
+            stream << amount;
+            stream << txTo.vin[nIn].nSequence;
         }
-
+        printf("Serialized Witness Transaction for sig: %s\n", HexStr(stream).c_str());
         return ss.GetHash();
     }
 
@@ -1213,6 +1233,11 @@ uint256 SignatureHash(
     // Serialize and hash
     CHashWriter ss(SER_GETHASH, 0);
     ss << txTmp << nHashType;
+
+    CDataStream stream(SER_NETWORK, PROTOCOL_VERSION); 
+    stream << txTmp << nHashType; 
+    printf("Serialized Transaction for sig: %s\n", HexStr(stream).c_str());
+
     return ss.GetHash();
 }
 

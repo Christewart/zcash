@@ -230,6 +230,7 @@ BOOST_AUTO_TEST_CASE(sighash_from_data)
     for (size_t idx = 0; idx < tests.size(); idx++) {
         UniValue test = tests[idx];
         std::string strTest = test.write();
+	printf("str test %s\n",strTest.c_str());
         if (test.size() < 1) // Allow for extra stuff (useful for comments)
         {
             BOOST_ERROR("Bad test: " << strTest);
